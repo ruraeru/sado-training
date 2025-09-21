@@ -1,17 +1,46 @@
-import { useCounterStore } from './store/counterStore';
+import { useSpotifyStore } from './store/spotify';
+import { useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { useCategories } from './hooks/useCategories';
+import { authSpotify } from './api/spotify/spotify';
 
 function App() {
-  const { count, increment, decrement, reset } = useCounterStore();
+  const { access_token, setSpotify } = useSpotifyStore();
+
+  useEffect(() => {
+    if (access_token) {
+      return;
+    }
+
+    const getToken = async () => {
+      try {
+        const tokenData = await authSpotify();
+        setSpotify(tokenData);
+      } catch (err) {
+        console.error('Spotify 토큰 발급에 실패했습니다:', err);
+      }
+    };
+
+    getToken();
+  }, [access_token, setSpotify]);
+
+  const { data, isLoading } = useCategories();
 
   return (
     <div className="h-screen flex flex-col gap-4 items-center justify-center bg-black text-white">
-      <h1 className="text-5xl font-extrabold">Hello World!</h1>
-      <p className="font-extrabold text-4xl text-yellow-500">{count}</p>
-      <div className="flex gap-4 *:bg-yellow-50 text-black *:p-3 *:hover:bg-yellow-500 *:cursor-pointer">
-        <button onClick={decrement}>Decrement</button>
-        <button onClick={increment}>Increment</button>
-        <button onClick={reset}>Reset</button>
-      </div>
+      {!isLoading && (
+        <div className="flex gap-4 flex-wrap items-center justify-center">
+          {!isLoading &&
+            data?.map((item) => (
+              <div key={item.id}>
+                <Link to={item.href}>
+                  <img src={item.icons[0].url} />
+                </Link>
+                <p>{item.name}</p>
+              </div>
+            ))}
+        </div>
+      )}
     </div>
   );
 }
